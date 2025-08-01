@@ -7,4 +7,5 @@ use Illuminate\Http\Request;
 class HestoryController extends Controller
 {
     //
+   
 }
