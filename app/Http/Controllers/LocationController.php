@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Location;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -29,8 +30,8 @@ class LocationController extends Controller
             $location['img']=asset('storage/'.$imagepath);
         }
         $location=Location::create($location);
-        return response()->json($location,status: 201);
-    }
+        return response()->json($location, 201);
+     }
 
     public function show($id){
         $location= Location::findOrFail($id);
@@ -68,20 +69,27 @@ class LocationController extends Controller
     }
 
     public function destroy($id){
-        $location = Location::findOrFail($id);
-        if(!$location){
-            return response()->json(['message' => 'Location not found'], status: 404);
-        }
+        try{
+            $location = Location::findOrFail($id);
+            if(!$location){
+                return response()->json(['message' => 'Location not found'], status: 404);
+            }
 
-          if ($location->img) {
-        $imagePath = str_replace(asset('storage') . '/', '', $location->img);
-        Storage::disk('public')->delete($imagePath);
-        }
+            if ($location->img) {
+            $imagePath = str_replace(asset('storage') . '/', '', $location->img);
+            Storage::disk('public')->delete($imagePath);
+            }
 
-        
-        $location->delete();
-        return response()->json([
-            'message'=>'Location deleted successfully'
-        ],200);
+            
+            $location->delete();
+
+            return response()->json([
+                'message'=>'Location deleted successfully'
+            ],200);
+        }catch(ModelNotFoundException $e){
+            return response()->json([
+                'message'=>'Location not found'
+            ],404);
+        }
     }
 }
