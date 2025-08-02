@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Location;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 use Locale;
 
 class LocationController extends Controller
@@ -18,10 +20,16 @@ class LocationController extends Controller
         $validate = $request->validate([
             'name' => 'required|string',
             'location' => 'required|string',
-            'img' => 'nullable|string'
+            'img' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
-        $location=Location::create($validate);
-        return response()->json($location,201);
+        $location=$request->all();
+        $imagepath=null;
+        if($request->hasFile('img')){
+            $imagepath=$request->file('img')->store('images','public');
+            $location['img']=asset('storage/'.$imagepath);
+        }
+        $location=Location::create($location);
+        return response()->json($location,status: 201);
     }
 
     public function show($id){
@@ -33,18 +41,47 @@ class LocationController extends Controller
         $validet = $request->validate([
               'name' => 'required|string',
             'location' => 'required|string',
-            'img' => 'nullable|string'
+            'img' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
         $location = Location::findOrFail($id);
-        $location->update($validet);
+         if (!$location) {
+        return response()->json(['message' => 'Location not found'], 404);
+        }
+         $location->name = $request->name;
+    $location->location = $request->location;
+
+        // បើមានរូបភាពថ្មី
+        if ($request->hasFile('img')) {
+            // លុបរូបភាពចាស់ប្រសិនបើមាន
+            if ($location->img) {
+                $oldPath = str_replace(asset('storage') . '/', '', $location->img);
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $newImagePath = $request->file('img')->store('images', 'public');
+            $location->img = asset('storage/' . $newImagePath);
+        }
+
+        $location->save();
+        // $location->update($validet);
         return response()->json($location);
     }
 
     public function destroy($id){
         $location = Location::findOrFail($id);
+        if(!$location){
+            return response()->json(['message' => 'Location not found'], status: 404);
+        }
+
+          if ($location->img) {
+        $imagePath = str_replace(asset('storage') . '/', '', $location->img);
+        Storage::disk('public')->delete($imagePath);
+        }
+
+        
         $location->delete();
         return response()->json([
-            'message'=>'Location deleted'
+            'message'=>'Location deleted successfully'
         ],200);
     }
 }
