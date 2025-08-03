@@ -2,35 +2,104 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Location;
 use App\Models\Movie;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Storage;
 
 class MovieController extends Controller
 {
     //
     public function index(){
-        $movies = Movie::all();
-        return response()->json($movies);
+        try{
+       $movies = Movie::all();
+        return response()->json($movies, 200);
+
+         } catch (Exception $e) {
+        return response()->json([
+            'message' => 'Failed to retrieve movies.',
+        ], 500);
+    }
     }
 
     public function store(Request $request){
-        $validate = $request->validate([
-            'movie_image'=>'required|image|mimes:jpeg,png,jpg|max:2048',
-            'title_movie'=>'required|string',
-            'screen_type'=>'required|string',
-            'duration'=>'required|string',
-            'release'=>'required|string',
-            'classification'=>'required|string',
-        ]);
-        $movies=$request->all();
-         $imagepath=null;
-        if($request->hasFile('movie_image')){
-            $imagepath=$request->file('img')->store('movie-img','public');
-            $movies['movie_image']=asset('storage/'.$imagepath);
-        }
-        $movies = Movie::create($movies);
-        return response()->json($movies,200);
+       try {
+            $validated = $request->validate([
+                'movie_image'     => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                'title_movie'     => 'required|string',
+                'screen_type'     => 'required|string',
+                'genre'           => 'required|string',
+                'duration'        => 'required|string',
+                'release'         => 'required|string',
+                'classification'  => 'required|string',
+            ]);
+             if (!$request->hasFile('movie_image')) {
+                return response()->json(['message' => 'មិនមានរូបភាពផ្ញើមកទេ។'], 422);
+            }
+            $imagePath = $request->file('movie_image')->store('movie-img', 'public');
+            $validated['movie_image'] = asset('storage/' . $imagePath);
 
+            $movie = Movie::create($validated);
+
+            return response()->json($movie, 200);
+
+        } catch (ValidationException $ve) {
+            return response()->json([
+                'message' => 'Validation error',
+                'errors'  => $ve->errors()
+            ], 422);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'បញ្ហាកើតឡើងពេលបញ្ចូលទិន្នន័យភាពយន្ត។',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function show($id){
+        try{
+            $movie = Movie::findOrFail($id);
+            return response()->json($movie);
+        }catch(Exception $e){
+             return response()->json([
+            'message' => 'Movie not found',
+            ], 404);
+        }
+    
+    }
+
+    public function update(Request $request,$id){
+        try{
+
+
+        }catch(Exception){
+            
+        }
+    }
+
+    public function destroy($id){
+        try{
+            $movie = Movie::findOrFail($id);
+            if(!$movie){
+                return response()->json(['message' => 'Location not found'], status: 404);
+            }
+
+            if ($movie->movie_image) {
+            $imagePath = str_replace(asset('storage') . '/', '', $movie->movie_image);
+            Storage::disk('public')->delete($imagePath);
+            }
+            $movie->delete();
+
+            return response()->json([
+                'message'=>'Location deleted successfully'
+            ],200);
+        }catch(ModelNotFoundException $e){
+            return response()->json([
+                'message'=>'Location not found'
+            ],404);
+        }
     }
 }

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Location;
+use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -38,36 +40,48 @@ class LocationController extends Controller
         return response()->json($location);
     }
 
-    public function update(Request $request,$id){
-        $validet = $request->validate([
-              'name' => 'required|string',
-            'location' => 'required|string',
-            'img' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
-        ]);
-        $location = Location::findOrFail($id);
-         if (!$location) {
-        return response()->json(['message' => 'Location not found'], 404);
-        }
-         $location->name = $request->name;
-    $location->location = $request->location;
+    public function update(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string',
+                'location' => 'required|string',
+                'img' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+            ]);
 
-        // បើមានរូបភាពថ្មី
-        if ($request->hasFile('img')) {
-            // លុបរូបភាពចាស់ប្រសិនបើមាន
-            if ($location->img) {
-                $oldPath = str_replace(asset('storage') . '/', '', $location->img);
-                Storage::disk('public')->delete($oldPath);
+            $location = Location::findOrFail($id);
+
+            $location->name = $validated['name'];
+            $location->location = $validated['location'];
+
+            if ($request->hasFile('img')) {
+                // Delete old image if exists
+                if ($location->img) {
+                    $oldPath = str_replace(asset('storage') . '/', '', $location->img);
+                    Storage::disk('public')->delete($oldPath);
+                }
+
+                $newImagePath = $request->file('img')->store('images', 'public');
+                $location->img = asset('storage/' . $newImagePath);
             }
 
-            $newImagePath = $request->file('img')->store('images', 'public');
-            $location->img = asset('storage/' . $newImagePath);
+            $location->save();
+
+            return response()->json($location);
+
+        } catch (ValidationException $ve) {
+            return response()->json([
+                'message' => 'Validation error',
+                'errors' => $ve->errors()
+            ], 422);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $location->save();
-        // $location->update($validet);
-        return response()->json($location);
     }
-
     public function destroy($id){
         try{
             $location = Location::findOrFail($id);
@@ -79,8 +93,6 @@ class LocationController extends Controller
             $imagePath = str_replace(asset('storage') . '/', '', $location->img);
             Storage::disk('public')->delete($imagePath);
             }
-
-            
             $location->delete();
 
             return response()->json([
