@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HestoryController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MovieController;
 use Illuminate\Http\Request;
@@ -10,3 +11,4 @@ use Illuminate\Support\Facades\Route;
 // })->middleware('auth:sanctum');
 Route::apiResource('locations',LocationController::class);
 Route::apiResource('movies',MovieController::class);
+Route::apiResource('histores',HestoryController::class);
