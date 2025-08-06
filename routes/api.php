@@ -14,3 +14,4 @@ Route::apiResource('locations',LocationController::class);
 Route::apiResource('movies',MovieController::class);
 Route::apiResource('histores',HestoryController::class);
 Route::apiResource('users',UserController::class);
+Route::post('login', [UserController::class, 'login']);
