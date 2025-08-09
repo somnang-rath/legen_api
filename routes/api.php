@@ -12,11 +12,22 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 //     return $request->user();
 // })->middleware('auth:sanctum');
 Route::apiResource('locations',LocationController::class);
-Route::apiResource('movies',MovieController::class);
-Route::apiResource('histores',HestoryController::class);
-Route::apiResource('users',UserController::class);
+Route::get('movies/index',[MovieController::class,'index']);
+Route::post('users', [UserController::class, 'store']);
 Route::post('login', [UserController::class, 'login']);
 
-Route::middleware(['jwt.auth'])->get('/user-profile', function (Request $request) {
-    return response()->json($request->user());
+
+Route::middleware('jwt.auth')->group(function () {
+    Route::get('user/profile', [UserController::class, 'profile']);
+    Route::post('user/update', [UserController::class, 'update']);
+    Route::delete('user/destroy', [UserController::class, 'destroy']);
+
+    Route::get('histores',[HestoryController::class,'show']);
+    Route::post('histores',[HestoryController::class,'store']);
+    Route::delete('histores',[HestoryController::class,'destroy']);
+
+    Route::get('movies/{id}',[MovieController::class,'show']);
+    Route::post('movies/store',[MovieController::class,'store']);
+    Route::delete('movies/{id}',[MovieController::class,'destroy']);
+    Route::get('movies', [MovieController::class, 'moviesUser']);
 });

@@ -4,16 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Exception;
-use Illuminate\Cache\Events\CacheHit;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
 
 
 class UserController extends Controller
 {
     //
+    public function profile(Request $request)
+    {
+        return response()->json($request->user());
+    }
     public function index(){
         $user=User::all();
         return response()->json($user);
@@ -59,35 +64,59 @@ class UserController extends Controller
             ], 404);
         }
     }
-    public function update(Request $request, $id){
-        try{
-            $user = User::findOrFail($id);
-            $validate = $request->validate([
-                'name'      => 'required|string',
-                'dob'       => 'required|string',
-                'address'   => 'required|string',
-                'phone'     => 'required|string',
-                'email'     => 'required|string',
-                'profile'   => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-                'password'  => 'required|string',
-            ]);
-            if ($request->hasFile('profile')) {
-                $imagePath = $request->file('profile')->store('profile', 'public');
-                $validate['profile'] = asset('storage/' . $imagePath);
-            }
-            // Hash the password before updating
-            $validate['password'] = bcrypt($validate['password']);
-            $user->update($validate);
-            return response()->json($user, 200);
-        }catch(ValidationException $ve){
-            return response()->json([
-                'message' => $ve->errors()
-            ]);
+   public function update(Request $request)
+{
+    try {
+        $userid = JWTAuth::parseToken()->authenticate();
+        $user = User::findOrFail($userid->id);
+        $validate = $request->validate([
+            'name'      => 'sometimes|string',
+            'dob'       => 'sometimes|string',
+            'address'   => 'sometimes|string',
+            'phone'     => 'sometimes|string',
+            'email'     => 'sometimes|email|unique:users,email,'. $userid->id,
+            'profile'   => 'sometimes|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+        // if (empty($validate)) {
+        //     return response()->json([
+        //         'message' => 'No data provided for update'
+        //     ], 422);
+        // }
+                // Handle profile image upload if present
+        if ($request->hasFile('profile')) {
+            $imagePath = $request->file('profile')->store('profile', 'public');
+
+            // Save relative path (not full URL) to DB
+            $validate['profile'] = $imagePath;
         }
+
+
+        // Update user with validated data
+        $user->update($validate);
+        // Return success response with updated user data
+        return response()->json([
+            'message' => 'User updated successfully',
+            'user' => $user,
+            'user_id' => $userid->id
+        ], 200);
+
+    } catch (ValidationException $ve) {
+        return response()->json([
+            'message' => $ve->errors()
+        ], 422); // Validation error status code
+    } catch (Exception $e) {
+        // General error handler
+        return response()->json([
+            'message' => 'Update failed',
+            'error' => $e->getMessage()
+        ], 500);
     }
-    public function destroy($id){
+}
+
+    public function destroy(){
         try{
-            $user=User::findOrFail($id);
+            $user = JWTAuth::parseToken()->authenticate();
+            $user = User::findOrFail($user->id);
             if ($user->profile) {
                 Storage::disk('public')->delete(str_replace(asset('storage/'), '', $user->profile));
             }

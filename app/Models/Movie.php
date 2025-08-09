@@ -16,6 +16,13 @@ class Movie extends Model
         'genre',
         'duration',
         'release',
-        'classification'
+        'classification',
+        'user_id'
     ];
+    protected $table='movies';
+    protected $guarded=['id'];
+
+    public function user(){
+        return $this->belongsTo(User::class,'user_id');
+    }
 }
