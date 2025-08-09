@@ -43,6 +43,10 @@ class UserController extends Controller
             return response()->json([
                 'message' => $ve->errors()
             ]);
+        }catch(Exception $e){
+            return response()->json([
+                'message' => 'User not found',
+            ], 404);
         }
     }
     public function show($id){
