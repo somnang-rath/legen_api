@@ -43,7 +43,10 @@ class UserController extends Controller
             // Hash the password before saving
             $validate['password'] = bcrypt($validate['password']);
             $user = User::create($validate);
-            return response()->json($user);
+
+            $token = JWTAuth::fromUser($user);
+
+            return response()->json(['user' => $user, 'token' => $token],201);
         }catch(ValidationException $ve){
             return response()->json([
                 'message' => $ve->errors()
@@ -74,7 +77,6 @@ class UserController extends Controller
             'dob'       => 'sometimes|string',
             'address'   => 'sometimes|string',
             'phone'     => 'sometimes|string',
-            'email'     => 'sometimes|email|unique:users,email,'. $userid->id,
             'profile'   => 'sometimes|image|mimes:jpeg,png,jpg|max:2048',
         ]);
         // If the password is provided, hash it
@@ -88,14 +90,7 @@ class UserController extends Controller
                 $newImagePath = $request->file('profile')->store('profile', 'public');
                 $validate['profile'] = asset('storage/' . $newImagePath);
             }
-        if ($request->hasFile('profile')) {
-            $imagePath = $request->file('profile')->store('profile', 'public');
-
-            // Save relative path (not full URL) to DB
-            $validate['profile'] = $imagePath;
-        }
-
-
+       
         // Update user with validated data
         $user->update($validate);
         // Return success response with updated user data

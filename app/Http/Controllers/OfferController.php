@@ -60,6 +60,7 @@ class OfferController extends Controller
             'description' => 'sometimes|string',
         ]);
          $offer = Offer::findOrFail($id);
+         
          if ($request->hasFile('img')) {
                 // Delete old image if exists
                 if ($offer->img) {
@@ -68,7 +69,7 @@ class OfferController extends Controller
                 }
 
                 $newImagePath = $request->file('img')->store('offer-img', 'public');
-                $validated['img'] = asset('storage/' . $newImagePath);
+                $validate['img'] = asset('storage/' . $newImagePath);
             }
         $offer->update($validate);
 
