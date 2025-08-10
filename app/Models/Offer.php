@@ -10,8 +10,7 @@ class Offer extends Model
     protected $fillable = [
         'img',
         'title',
-        'price',
-        'start_date',
+        'date_time',
         'description',
     ];
     protected $guarded = ['id'];

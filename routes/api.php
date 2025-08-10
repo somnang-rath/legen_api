@@ -3,6 +3,7 @@
 use App\Http\Controllers\HestoryController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MovieController;
+use App\Http\Controllers\OfferController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +13,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 //     return $request->user();
 // })->middleware('auth:sanctum');
 Route::apiResource('locations',LocationController::class);
+Route::apiResource('offers',OfferController::class);
 Route::get('movies/index',[MovieController::class,'index']);
 Route::post('users', [UserController::class, 'store']);
 Route::post('login', [UserController::class, 'login']);
@@ -19,7 +21,7 @@ Route::post('login', [UserController::class, 'login']);
 
 Route::middleware('jwt.auth')->group(function () {
     Route::get('user/profile', [UserController::class, 'profile']);
-    Route::post('user/update', [UserController::class, 'update']);
+    Route::put('user/update', [UserController::class, 'update']);
     Route::delete('user/destroy', [UserController::class, 'destroy']);
 
     Route::get('histores',[HestoryController::class,'show']);

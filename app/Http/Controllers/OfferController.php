@@ -23,8 +23,7 @@ class OfferController extends Controller
             $validate =$request->validate([
                 'img' => 'required|image|mimes:jpeg,png,jpg|max:2048',
                 'title' => 'required|string|max:255',
-                'price' => 'required|numeric',
-                'start_date' => 'required|date',
+                'date_time' => 'required|string',
                 'description' => 'nullable|string',
             ]);
             if (!$request->hasFile('img')) {
@@ -51,29 +50,36 @@ class OfferController extends Controller
    
     }
 
-    public function update(Request $request, $id)
-    {
-        try {
-            $offer = Offer::findOrFail($id);
-            $validate = $request->validate([
-                'img' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-                'title' => 'required|string|max:255',
-                'price' => 'required|numeric',
-                'start_date' => 'required|date',
-                'description' => 'nullable|string',
-            ]);
-            if ($request->hasFile('img')) {
-                $imagePath = $request->file('img')->store('offer-img', 'public');
-                $validate['img'] = asset('storage/' . $imagePath);
+ public function update(Request $request, $id)
+{
+    try {
+        $validate = $request->validate([
+            'img' => 'sometimes|image|mimes:jpeg,png,jpg|max:2048',
+            'title' => 'sometimes|string|max:255',
+            'date_time' => 'sometimes|string',
+            'description' => 'sometimes|string',
+        ]);
+         $offer = Offer::findOrFail($id);
+         if ($request->hasFile('img')) {
+                // Delete old image if exists
+                if ($offer->img) {
+                    $oldPath = str_replace(asset('storage') . '/', '', $offer->img);
+                    Storage::disk('public')->delete($oldPath);
+                }
+
+                $newImagePath = $request->file('img')->store('offer-img', 'public');
+                $validated['img'] = asset('storage/' . $newImagePath);
             }
-            $offer->update($validate);
-            return response()->json($offer, 200);
-        } catch (ValidationException $e) {
-            return response()->json(['error' => $e->errors()], 422);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Offer not found'], 404);
-        }
+        $offer->update($validate);
+
+        return response()->json($validate, 200);
+    } catch (ValidationException $e) {
+        return response()->json(['error' => $e->errors()], 422);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
+
 
     public function destroy($id)
     {

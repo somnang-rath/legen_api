@@ -77,12 +77,17 @@ class UserController extends Controller
             'email'     => 'sometimes|email|unique:users,email,'. $userid->id,
             'profile'   => 'sometimes|image|mimes:jpeg,png,jpg|max:2048',
         ]);
-        // if (empty($validate)) {
-        //     return response()->json([
-        //         'message' => 'No data provided for update'
-        //     ], 422);
-        // }
-                // Handle profile image upload if present
+        // If the password is provided, hash it
+        if ($request->hasFile('profile')) {
+                // Delete old image if exists
+                if ($user->profile) {
+                    $oldPath = str_replace(asset('storage') . '/', '', $user->profile);
+                    Storage::disk('public')->delete($oldPath);
+                }
+
+                $newImagePath = $request->file('profile')->store('profile', 'public');
+                $validate['profile'] = asset('storage/' . $newImagePath);
+            }
         if ($request->hasFile('profile')) {
             $imagePath = $request->file('profile')->store('profile', 'public');
 
