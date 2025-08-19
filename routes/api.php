@@ -9,9 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
 Route::apiResource('locations',LocationController::class);
 Route::apiResource('offers',OfferController::class);
 Route::get('movies/index',[MovieController::class,'index']);
